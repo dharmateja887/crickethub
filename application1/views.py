@@ -15,7 +15,16 @@ from .models import ChatMessage, Profile, Subscription
 from dashboard.models import DashboardChatMessage, DashboardSuggestion
 from CricketZone.settings import GOOGLE_API_KEY
 
-genai_client = genai.Client(api_key=GOOGLE_API_KEY)
+_genai_client = None
+
+
+def get_genai_client():
+    global _genai_client
+    if _genai_client is None:
+        if not GOOGLE_API_KEY:
+            raise ValueError("GOOGLE_API_KEY is not configured.")
+        _genai_client = genai.Client(api_key=GOOGLE_API_KEY)
+    return _genai_client
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +77,7 @@ def chatbox(request):
             if response:
                 break
             try:
-                interaction = genai_client.interactions.create(
+                interaction = get_genai_client().interactions.create(
                     model=model_name,
                     input=[
                         {"type": "text", "text": f"{sys_prompt}\n\nUser question: {original}"},
@@ -208,7 +217,7 @@ def suggestions(request):
             if response:
                 break
             try:
-                interaction = genai_client.interactions.create(
+                interaction = get_genai_client().interactions.create(
                     model=model_name,
                     input=[
                         {"type": "text", "text": f"{sys_prompt}\n\nUser question: {original}"},
