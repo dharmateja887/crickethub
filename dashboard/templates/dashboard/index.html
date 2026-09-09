@@ -1,0 +1,292 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CricketHub Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .dashboard-header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            padding: 20px 40px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dashboard-header h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, #0ea5ff, #ff0077);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .dashboard-header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .dashboard-header .user-info span {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .dashboard-header .logout-btn {
+            padding: 8px 16px;
+            background: rgba(255,0,119,0.1);
+            border: 1px solid rgba(255,0,119,0.2);
+            color: #ff0077;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .dashboard-header .logout-btn:hover {
+            background: rgba(255,0,119,0.2);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px 40px;
+        }
+        .stat-card {
+            background: rgba(15,23,42,0.8);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: 0.3s;
+        }
+        .stat-card:hover {
+            border-color: rgba(14,165,255,0.3);
+            transform: translateY(-2px);
+        }
+        .stat-card .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin: 0 auto 12px;
+        }
+        .stat-card .icon.blue { background: rgba(14,165,255,0.12); color: #0ea5ff; }
+        .stat-card .icon.green { background: rgba(34,197,94,0.12); color: #22c55e; }
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: #7d8496;
+        }
+        .content-section {
+            padding: 0 40px 40px;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            color: #94a3b8;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tab-btn:hover, .tab-btn.active {
+            background: rgba(14,165,255,0.1);
+            border-color: rgba(14,165,255,0.3);
+            color: #0ea5ff;
+        }
+        .tab-content {
+            display: none;
+            background: rgba(15,23,42,0.6);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th {
+            padding: 14px 18px;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #7d8496;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .data-table td {
+            padding: 12px 18px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: #c8cdd8;
+        }
+        .data-table tr:hover td {
+            background: rgba(14,165,255,0.04);
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge.user { background: rgba(255,0,119,0.12); color: #ff0077; }
+        .badge.bot { background: rgba(14,165,255,0.12); color: #0ea5ff; }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #4a4f62;
+        }
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+        .message-preview {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <h1><i class="fa-solid fa-shield-halved"></i> CricketHub Admin Dashboard</h1>
+        <div class="user-info">
+            <span>Welcome, {{ user.username }}</span>
+            <a href="{% url 'admin:index' %}" class="logout-btn"><i class="fa-solid fa-gear"></i> Django Admin</a>
+            <a href="{% url 'index' %}" class="logout-btn"><i class="fa-solid fa-arrow-left"></i> Back to Site</a>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon blue"><i class="fa-solid fa-comments"></i></div>
+            <div class="number">{{ total_chatbox }}</div>
+            <div class="label">Chatbox Messages</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon green"><i class="fa-solid fa-lightbulb"></i></div>
+            <div class="number">{{ total_suggestions }}</div>
+            <div class="label">Suggestions</div>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('chatbox')">
+                <i class="fa-solid fa-comments"></i> Chatbox
+            </button>
+            <button class="tab-btn" onclick="switchTab('suggestions')">
+                <i class="fa-solid fa-lightbulb"></i> Suggestions
+            </button>
+        </div>
+
+        <!-- Chatbox Tab -->
+        <div class="tab-content active" id="tab-chatbox">
+            {% if chat_messages %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Message</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for msg in chat_messages %}
+                    <tr>
+                        <td>{{ msg.user|default:"Guest" }}</td>
+                        <td><div class="message-preview">{{ msg.message|safe }}</div></td>
+                        <td>
+                            {% if msg.is_user %}
+                            <span class="badge user">User</span>
+                            {% else %}
+                            <span class="badge bot">Bot</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ msg.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <i class="fa-solid fa-comment-slash"></i>
+                <p>No chatbox messages found</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Suggestions Tab -->
+        <div class="tab-content" id="tab-suggestions">
+            {% if suggestions %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Question</th>
+                        <th>Response</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in suggestions %}
+                    <tr>
+                        <td>{{ s.user|default:"Guest" }}</td>
+                        <td><div class="message-preview">{{ s.question }}</div></td>
+                        <td><div class="message-preview">{{ s.response|safe }}</div></td>
+                        <td>{{ s.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <i class="fa-solid fa-lightbulb"></i>
+                <p>No suggestions found</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>

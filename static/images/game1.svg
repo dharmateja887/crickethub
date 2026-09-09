@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600">
+  <rect width="1200" height="1600" fill="#07131f"/>
+  <rect x="60" y="70" width="1080" height="1460" rx="48" fill="#0f2740"/>
+  <rect x="160" y="220" width="880" height="980" rx="30" fill="#142f45"/>
+  <rect x="220" y="300" width="760" height="760" rx="24" fill="#1d3d57"/>
+  <path d="M250 860 L450 620 L700 710 L960 500" stroke="#22c55e" stroke-width="26" fill="none" stroke-linecap="round"/>
+  <circle cx="450" cy="620" r="48" fill="#f59e0b"/>
+  <circle cx="960" cy="500" r="48" fill="#38bdf8"/>
+  <circle cx="700" cy="710" r="48" fill="#f8fafc"/>
+  <text x="600" y="1270" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="84" font-weight="700" fill="#f8fafc">CRICKET</text>
+</svg>

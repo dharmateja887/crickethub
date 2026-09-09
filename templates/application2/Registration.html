@@ -1,0 +1,1157 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,sans-serif;
+}
+html, body{
+width:100%;
+overflow-x:hidden;
+}
+
+body{
+background:black;
+color:white;
+display:block;
+min-height:100vh;
+}
+
+img, video{
+max-width:100%;
+display:block;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Multi-Step Registration Popup Styling */
+.registration-popup{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.7);
+    z-index:200;
+    backdrop-filter: blur(6px);
+}
+
+.registration-popup.hidden{
+    display:none;
+}
+
+.registration-popup .popup-content{
+    width:min(92vw,380px);
+    background:rgba(12,13,25,0.98);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:20px;
+    padding:28px 24px;
+    text-align:center;
+    color:#f8fafc;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+}
+
+.registration-popup h2{
+    margin-bottom:14px;
+    font-size:1.65rem;
+}
+
+.registration-popup p{
+    margin-bottom:22px;
+    color:#cbd5e1;
+    line-height:1.6;
+}
+
+.popup-step {
+    display: none;
+}
+.popup-step.active {
+    display: block;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    color: #94a3b8;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #0ea5ff;
+    background: rgba(255,255,255,0.08);
+}
+
+.popup-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #0ea5ff, #ff0077);
+    color: white;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+.popup-btn:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+}
+
+.popup-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    margin-top: 16px;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: underline;
+}
+
+/* HERO */
+.hero{
+min-height:clamp(360px, 75vh, 720px);
+height:75vh;
+position:relative;
+overflow:hidden;
+}
+
+.hero video{
+width:100%;
+height:100%;
+object-fit:cover;
+object-position:center center;
+display:block;
+transform:scale(1.05);
+filter:brightness(0.8);
+aspect-ratio:16 / 9;
+}
+
+.overlay{
+position:absolute;
+left:0;
+top:0;
+width:100%;
+height:100%;
+display:flex;
+flex-direction:column;
+justify-content:center;
+padding:clamp(24px, 4vw, 80px);
+padding-right:24px;
+max-width:100%;
+}
+
+.overlay h1{
+font-size:clamp(2rem, 4.5vw, 5rem);
+font-weight:900;
+line-height:1.1;
+max-width:720px;
+}
+
+.overlay p{
+font-size:clamp(1rem, 2vw, 1.25rem);
+max-width:520px;
+width:100%;
+margin:20px 0;
+line-height:1.6;
+}
+
+.buttons{
+display:flex;
+gap:15px;
+flex-wrap:wrap;
+}
+
+.watch-btn,
+.info-btn,
+.play,
+.back-btn,
+.btn,
+.play-btn,
+.play-hover-btn{
+padding:16px 35px;
+border:none;
+border-radius:12px;
+cursor:pointer;
+font-size:17px;
+font-weight:600;
+transition:0.3s;
+background:linear-gradient(90deg,#0ea5ff,#ff0077);
+color:white;
+}
+
+.watch-btn:hover,
+.info-btn:hover,
+.play:hover,
+.back-btn:hover,
+.btn:hover,
+.play-btn:hover,
+.play-hover-btn:hover{
+transform:scale(1.05);
+}
+
+.info-btn{
+background:linear-gradient(90deg,#0ea5ff,#ff0077);
+}
+
+.play{
+box-shadow:0 8px 20px rgba(14, 165, 255, 0.25);
+}
+
+.play:hover{
+transform:scale(1.05);
+}
+
+.watch{
+background:rgba(255,255,255,0.15);
+border:none;
+padding:16px 35px;
+border-radius:12px;
+color:white;
+backdrop-filter:blur(10px);
+transition:0.3s;
+}
+
+.watch:hover{
+background:rgba(255,255,255,0.25);
+}
+
+/* ROWS */
+.content{
+padding:clamp(18px, 3vw, 32px);
+}
+
+.content h2{
+margin-bottom:20px;
+font-size:clamp(1.2rem, 2.2vw, 1.6rem);
+}
+
+.row{
+display:flex;
+overflow-x:auto;
+overflow-y:hidden;
+padding-bottom:8px;
+gap:15px;
+width:100%;
+scroll-snap-type:x mandatory;
+-webkit-overflow-scrolling:touch;
+}
+
+.row::-webkit-scrollbar{
+display:none;
+}
+
+.card{
+    position:relative;
+    flex:0 0 min(240px, 78vw);
+    width:min(240px, 78vw);
+    height:clamp(240px, 32vw, 340px);
+    min-height:240px;
+    border-radius:12px;
+    overflow:hidden;
+    cursor:pointer;
+    transition:0.4s;
+    scroll-snap-align:start;
+}
+
+.card img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.card:hover{
+    transform:scale(1.04);
+    z-index:10;
+}
+
+.card-overlay{
+    inset:0;
+    background:linear-gradient(
+        to top,
+        rgba(0,0,0,0.95),
+        rgba(0,0,0,0.2)
+    );
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    padding:15px;
+    opacity:0;
+    transition:0.4s;
+}
+
+.card:hover .card-overlay{
+    opacity:1;
+    position:absolute;
+}
+
+.play-hover-btn{
+    width:120px;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:white;
+    color:#111;
+    margin-bottom:10px;
+    cursor:pointer;
+    font-weight:700;
+}
+
+.card-overlay h3{
+    font-size:16px;
+    margin-bottom:6px;
+}
+
+.card-overlay p{
+    font-size:12px;
+    color:#ddd;
+    margin-bottom:8px;
+    line-height:1.4;
+}
+
+.tags{
+    font-size:11px;
+    color:#cbd5e1;
+}
+
+@media (max-width:1024px){
+.main{
+    margin-left:0;
+    width:100%;
+}
+
+.row{
+    display:flex;
+    flex-wrap:nowrap;
+    gap:14px;
+}
+
+.card{
+    flex-basis:min(220px, 78vw);
+    width:min(220px, 78vw);
+}
+
+.hero{
+    height:60vh;
+    min-height:420px;
+}
+
+.overlay{
+    padding-left:40px;
+    padding-right:40px;
+}
+}
+
+@media (max-width:768px){
+.hero{
+    height:auto;
+    min-height:55vh;
+}
+
+.overlay{
+    padding:24px 20px;
+    justify-content:flex-end;
+    background:linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.85));
+}
+
+.overlay h1{
+    font-size:clamp(1.6rem, 7vw, 2.2rem);
+    margin-top:40px;
+}
+
+.overlay p{
+    font-size:16px;
+    margin:12px 0 18px;
+}
+
+.buttons{
+    flex-direction:column;
+    align-items:stretch;
+}
+
+.play,
+.watch,
+.watch-btn,
+.info-btn{
+    width:100%;
+    padding:12px 20px;
+    font-size:16px;
+}
+
+.content{
+    padding:18px 16px 24px;
+}
+
+.card{
+    height:min(300px, 60vw);
+    min-height:220px;
+}
+}
+
+@media (max-width:480px){
+.overlay{
+    padding:20px 16px 24px;
+}
+
+.content{
+    padding:16px 12px 20px;
+}
+
+.card{
+    flex-basis:min(160px, 78vw);
+    width:min(160px, 78vw);
+    height:220px;
+}
+}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- REGISTRATION POPUP (MULTI-STEP) -->
+<div class="registration-popup hidden" id="authPopup">
+  <div class="popup-content">
+    <!-- Step 1: Request Mobile -->
+    <div class="popup-step active" id="stepMobile">
+      <h2>Join CricketHub</h2>
+      <p>Please register with your mobile number to unlock instant gaming access.</p>
+
+      <div class="input-group">
+        <label for="regPhone">Mobile Number</label>
+        <input type="tel" id="regPhone" placeholder="Enter 10-digit mobile number" maxlength="10">
+      </div>
+      <button type="button" class="popup-btn" id="btnSendOtp">Send Verification OTP</button>
+      <button type="button" class="popup-close-btn" id="btnClosePopup">Cancel</button>
+    </div>
+
+    <!-- Step 2: Request OTP -->
+    <div class="popup-step" id="stepOtp">
+      <h2>Verify OTP</h2>
+      <p id="otpHintText">Enter the 4-digit code dispatched to your device.</p>
+      <div class="input-group">
+        <label for="regOtp">Verification Code</label>
+        <input type="text" id="regOtp" placeholder="Enter OTP code" maxlength="4">
+      </div>
+      <button type="button" class="popup-btn" id="btnVerifyOtp">Confirm & Complete</button>
+    </div>
+
+    <!-- Step 3: Success Notification -->
+    <div class="popup-step" id="stepSuccess">
+      <div style="font-size: 48px; color: #4def8d; margin-bottom: 12px;"><i class="fa-solid fa-circle-check"></i></div>
+      <h2>Welcome Player!</h2>
+      <p id="successMobileText">Your mobile number will appear here after verification.</p>
+      <button type="button" class="popup-btn" id="btnFinishAuth">Let's Play</button>
+    </div>
+  </div>
+</div>
+
+<section class="hero">
+        <video autoplay muted loop playsinline poster="{% static 'images/hero-cricket.svg' %}">
+            <source src="{% static 'images/cricket-head.mp4' %}" type="video/mp4">
+        </video>
+        <div class="overlay">
+            <h1>CRICKET CHAMPIONS</h1>
+            <p>Play realistic cricket games, join tournaments and compete online.</p>
+            <div class="buttons">
+                <button class="play">▶ Play Now</button>
+                <button class="watch">+ Subscribe</button>
+            </div>
+        </div>
+    </section>
+
+     <!-- ROW 1 -->
+
+    <section class="content">
+
+    <h2>Trending Cricket Games</h2>
+
+    <div class="row">
+
+        <!-- Card 1 -->
+        <div class="card">
+
+            <img src="{% static 'images/game11.jpg' %}" alt="IPL Cricket">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>IPL Cricket 2026</h3>
+
+                <p>
+                    Play exciting IPL matches with your
+                    favourite teams and compete for the trophy.
+                </p>
+
+                <div class="tags">
+                    Cricket • Sports • Multiplayer
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+
+            <img src="{% static 'images/game12.jpg' %}" alt="World Cricket">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>World Cricket Championship</h3>
+
+                <p>
+                    Experience realistic cricket gameplay
+                    and become the world champion.
+                </p>
+
+                <div class="tags">
+                    Cricket • Tournament • Online
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+
+            <img src="{% static 'images/game13.jpg' %}" alt="Super Over">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Super Over Cricket</h3>
+
+                <p>
+                    Hit sixes, chase targets and enjoy
+                    thrilling super over matches.
+                </p>
+
+                <div class="tags">
+                    Cricket • Arcade • Action
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card">
+
+            <img src="{% static 'images/game14.jpg' %}" alt="Street Cricket">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Street Cricket League</h3>
+
+                <p>
+                    Enjoy quick cricket matches and
+                    fun challenges with friends.
+                </p>
+
+                <div class="tags">
+                    Cricket • Casual • Fun
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 5 -->
+        <div class="card">
+
+            <img src="{% static 'images/game15.jpg' %}" alt="Cricket League">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Cricket League 3D</h3>
+
+                <p>
+                    Build your dream team and win
+                    league championships.
+                </p>
+
+                <div class="tags">
+                    Cricket • League • Multiplayer
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 6 -->
+        <div class="card">
+
+            <img src="{% static 'images/game21.jpg' %}" alt="Power Hit Cricket">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Power Hit Cricket</h3>
+
+                <p>
+                    Smash sixes and dominate the scoreboard in fast-paced matches.
+                </p>
+
+                <div class="tags">
+                    Cricket • Power • Arcade
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 7 -->
+        <div class="card">
+
+            <img src="{% static 'images/game22.jpg' %}" alt="Fast Bowling Challenge">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Fast Bowling Challenge</h3>
+
+                <p>
+                    Bowl with precision and outsmart every batsman in the arena.
+                </p>
+
+                <div class="tags">
+                    Cricket • Bowling • Skill
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 8 -->
+        <div class="card">
+
+            <img src="{% static 'images/game23.jpg' %}" alt="Stadium Clash">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Stadium Clash</h3>
+
+                <p>
+                    Face thrilling rival teams in an intense cricket showdown.
+                </p>
+
+                <div class="tags">
+                    Cricket • Stadium • Competitive
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 9 -->
+        <div class="card">
+
+            <img src="{% static 'images/game24.jpg' %}" alt="Champion Cup">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Champion Cup</h3>
+
+                <p>
+                    Compete in tournament rounds and claim the ultimate crown.
+                </p>
+
+                <div class="tags">
+                    Cricket • Cup • Tournament
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 10 -->
+        <div class="card">
+
+            <img src="{% static 'images/game25.jpg' %}" alt="Legendary Eleven">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Legendary Eleven</h3>
+
+                <p>
+                    Build your dream side and relive classic cricket moments.
+                </p>
+
+                <div class="tags">
+                    Cricket • Legends • Strategy
+                </div>
+
+            </div>
+
+        </div>
+        
+
+</section>
+
+    <!-- ROW 2 -->
+
+    <section class="content">
+
+    <h2>Recently Played</h2>
+
+    <div class="row">
+
+        <!-- Card 1 -->
+        <div class="card">
+
+            <img src="{% static 'images/game16.jpg' %}" alt="Cricket Rivals">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Cricket Rivals</h3>
+
+                <p>
+                    Challenge players worldwide and
+                    climb the global rankings.
+                </p>
+
+                <div class="tags">
+                    Cricket • Online • Multiplayer
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+
+            <img src="{% static 'images/game17.jpg' %}" alt="IPL Masters">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>IPL Masters</h3>
+
+                <p>
+                    Lead your favourite IPL team
+                    to championship glory.
+                </p>
+
+                <div class="tags">
+                    Cricket • IPL • Sports
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+
+            <img src="{% static 'images/game18.jpg' %}" alt="Cricket Battle">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Cricket Battle</h3>
+
+                <p>
+                    Play intense cricket matches
+                    with realistic gameplay.
+                </p>
+
+                <div class="tags">
+                    Cricket • Action • 3D
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card">
+
+            <img src="{% static 'images/game19.jpg' %}" alt="Super Sixes">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Super Sixes</h3>
+
+                <p>
+                    Smash massive sixes and
+                    complete exciting challenges.
+                </p>
+
+                <div class="tags">
+                    Cricket • Arcade • Fun
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 5 -->
+        <div class="card">
+
+            <img src="{% static 'images/game20.jpg' %}" alt="World Cup Cricket">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>World Cup Cricket</h3>
+
+                <p>
+                    Compete against top nations
+                    and lift the World Cup trophy.
+                </p>
+
+                <div class="tags">
+                    Cricket • Tournament • Championship
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 6 -->
+        <div class="card">
+
+            <img src="{% static 'images/game26.jpg' %}" alt="Cricket Rush">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Cricket Rush</h3>
+
+                <p>
+                    Experience rapid-fire cricket action with nonstop excitement.
+                </p>
+
+                <div class="tags">
+                    Cricket • Rush • Fast Play
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 7 -->
+        <div class="card">
+
+            <img src="{% static 'images/game27.jpg' %}" alt="Captain’s Choice">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Captain’s Choice</h3>
+
+                <p>
+                    Lead your team with smart tactics and match-winning decisions.
+                </p>
+
+                <div class="tags">
+                    Cricket • Tactics • Manager
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 8 -->
+        <div class="card">
+
+            <img src="{% static 'images/game28.jpg' %}" alt="Boundary Bash">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Boundary Bash</h3>
+
+                <p>
+                    Chase huge totals with explosive batting and stylish shots.
+                </p>
+
+                <div class="tags">
+                    Cricket • Big Hits • Arcade
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 9 -->
+        <div class="card">
+
+            <img src="{% static 'images/game29.jpg' %}" alt="Spin Wizard">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>Spin Wizard</h3>
+
+                <p>
+                    Outfox batsmen with clever spin and perfect line and length.
+                </p>
+
+                <div class="tags">
+                    Cricket • Spin • Precision
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Card 10 -->
+        <div class="card">
+
+            <img src="{% static 'images/game30.jpg' %}" alt="T20 Fever">
+
+            <div class="card-overlay">
+
+                <button class="play-hover-btn">
+                    ▶ Play Now
+                </button>
+
+                <h3>T20 Fever</h3>
+
+                <p>
+                    Enjoy high-energy T20 cricket packed with big moments.
+                </p>
+
+                <div class="tags">
+                    Cricket • T20 • Thrill
+                </div>
+
+            </div>
+
+        </div>
+        
+
+</section>
+
+</div>
+
+<!-- LOGIC SCRIPTS -->
+<script>
+// Authentication Application State Management
+let appState = {
+    isRegistered: false,
+    phoneNumber: '',
+    simulatedServerOtp: null
+};
+
+// UI Element Selections
+const authPopup = document.getElementById('authPopup');
+const stepMobile = document.getElementById('stepMobile');
+const stepOtp = document.getElementById('stepOtp');
+const stepSuccess = document.getElementById('stepSuccess');
+
+const regPhoneInput = document.getElementById('regPhone');
+const regOtpInput = document.getElementById('regOtp');
+const otpHintText = document.getElementById('otpHintText');
+const successMobileText = document.getElementById('successMobileText');
+
+// Navigation Trigger Closures
+function showStep(stepElement) {
+    [stepMobile, stepOtp, stepSuccess].forEach(step => step.classList.remove('active'));
+    stepElement.classList.add('active');
+}
+
+function openAuthPopup() {
+    regPhoneInput.value = '';
+    regOtpInput.value = '';
+    showStep(stepMobile);
+    authPopup.classList.remove('hidden');
+}
+
+function closeAuthPopup() {
+    authPopup.classList.add('hidden');
+}
+
+// Simulated API Endpoints mimicking standard Backend Interactions
+function mockSendOtpAPI(phoneValue) {
+    const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    appState.simulatedServerOtp = generatedOtp;
+    appState.phoneNumber = phoneValue;
+    
+    console.log(`[BACKEND API DISPATCH] OTP sent successfully to: +91${phoneValue}. CODE: ${generatedOtp}`);
+    alert(`[MOCK SMS] OTP sent to +91 ${phoneValue}. Verification code: ${generatedOtp}`);
+    return true;
+}
+
+// Action Button Intercept Framework
+document.body.addEventListener('click', (event) => {
+    const targetButton = event.target.closest('button');
+    if (!targetButton) return;
+
+    if (
+        targetButton.classList.contains('menu-toggle') || 
+        targetButton.id === 'btnSendOtp' || 
+        targetButton.id === 'btnVerifyOtp' || 
+        targetButton.id === 'btnFinishAuth' ||
+        targetButton.id === 'btnClosePopup'
+    ) {
+        return; 
+    }
+
+    if (!appState.isRegistered) {
+        event.preventDefault();
+        event.stopPropagation();
+        openAuthPopup();
+    }
+});
+
+function getNextPage() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('next') || "{% url 'index' %}";
+}
+
+// Step 1 Click Handler: Verify Mobile before dispatching
+document.getElementById('btnSendOtp').addEventListener('click', () => {
+    const phoneVal = regPhoneInput.value.trim();
+
+    if (phoneVal.length !== 10 || isNaN(phoneVal)) {
+        alert("Verification Failure: Please supply an active, standard 10-digit mobile line number.");
+        return;
+    }
+    
+    if (mockSendOtpAPI(phoneVal)) {
+        otpHintText.textContent = `Enter the 4-digit code dispatched to +91 ${phoneVal}`;
+        successMobileText.textContent = `Your verified mobile number: +91 ${phoneVal}`;
+        showStep(stepOtp);
+    }
+});
+
+// Step 2 Click Handler: Read authentication key verification match
+document.getElementById('btnVerifyOtp').addEventListener('click', () => {
+    const otpVal = regOtpInput.value.trim();
+    if (otpVal === appState.simulatedServerOtp) {
+        showStep(stepSuccess);
+    } else {
+        alert("Invalid Security Code: Input token string mismatch against generated backend value.");
+    }
+});
+
+// Step 3 Click Handler: Transition user into authenticated state context 
+document.getElementById('btnFinishAuth').addEventListener('click', async () => {
+    const phone = appState.phoneNumber;
+    try {
+        const resp = await fetch('/register/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({mobile: phone})
+        });
+        const result = await resp.json();
+        if (result.success) {
+            appState.isRegistered = true;
+            localStorage.setItem('cricketHubRegistered', 'true');
+            closeAuthPopup();
+            if (successMobileText) {
+                successMobileText.textContent = `Mobile verified: +91 ${phone}`;
+            }
+            window.location.href = getNextPage();
+        } else {
+            alert('Registration failed: ' + (result.error || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Server error during registration.');
+    }
+});
+
+document.getElementById('btnClosePopup').addEventListener('click', closeAuthPopup);
+</script>
+
+{% endblock %}

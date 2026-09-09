@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600">
+  <rect width="1200" height="1600" fill="#0b1220"/>
+  <rect x="70" y="90" width="1060" height="1420" rx="44" fill="#111827"/>
+  <rect x="170" y="250" width="860" height="930" rx="32" fill="#0f172a" stroke="#22c55e" stroke-width="8"/>
+  <path d="M240 1120 L520 520 L780 760 L1020 430" stroke="#facc15" stroke-width="28" fill="none" stroke-linecap="round"/>
+  <circle cx="520" cy="520" r="54" fill="#38bdf8"/>
+  <circle cx="780" cy="760" r="54" fill="#f43f5e"/>
+  <circle cx="1020" cy="430" r="54" fill="#f8fafc"/>
+  <text x="600" y="1280" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="74" font-weight="700" fill="#f8fafc">SUPER OVER</text>
+</svg>

@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Chatbox | CricketHub{% endblock %}
+{% block extra_css %}
+<style>
+    .chatbox-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 28px;
+        gap: 20px;
+    }
+    .chat-wrapper {
+        display: flex;
+        width: 100%;
+        max-width: 960px;
+        gap: 20px;
+        height: 80vh;
+        max-height: 700px;
+    }
+    .chat-container {
+        flex: 1;
+        min-width: 0;
+        background: rgba(8,12,24,0.85);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        backdrop-filter: blur(14px);
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-header {
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .chat-header h1 {
+        font-size: 1.2rem;
+        margin: 0 0 2px;
+        background: linear-gradient(90deg, #0ea5ff, #ff0077);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .chat-header p {
+        color: #7d8496;
+        font-size: 0.8rem;
+        margin: 0;
+    }
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+    .message {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        animation: msgIn 0.3s ease;
+    }
+    @keyframes msgIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .message.bot {
+        background: rgba(14,165,255,0.08);
+        border: 1px solid rgba(14,165,255,0.12);
+        color: #e2e8f0;
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+    }
+    .message.user {
+        background: rgba(255,0,119,0.08);
+        border: 1px solid rgba(255,0,119,0.12);
+        color: #f1f5f9;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+    }
+    .message.bot strong { color: #0ea5ff; }
+    .typing-indicator {
+        display: none;
+        align-self: flex-start;
+        padding: 12px 16px;
+        background: rgba(14,165,255,0.06);
+        border: 1px solid rgba(14,165,255,0.1);
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        gap: 4px;
+    }
+    .typing-indicator.active { display: flex; }
+    .typing-indicator span {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #7d8496;
+        animation: typing 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+        0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+        40% { opacity: 1; transform: translateY(-4px); }
+    }
+    .chat-input-area {
+        padding: 16px 24px 20px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        display: flex;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .chat-input-area input {
+        flex: 1;
+        padding: 12px 16px;
+        border-radius: 40px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.04);
+        color: #fff;
+        font-size: 0.9rem;
+        outline: none;
+    }
+    .chat-input-area input:focus { border-color: rgba(14,165,255,0.4); }
+    .chat-input-area input::placeholder { color: #4a4f62; }
+    .chat-input-area button {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 0;
+        background: linear-gradient(135deg, #0ea5ff, #ff0077);
+        color: #fff;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .chat-input-area button:hover { opacity: 0.85; }
+    .chat-input-area button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .chat-chip {
+        display: inline-block;
+        padding: 6px 14px;
+        margin: 3px;
+        border-radius: 30px;
+        border: 1px solid rgba(14,165,255,0.2);
+        background: rgba(14,165,255,0.06);
+        color: #0ea5ff;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: 0.2s;
+        white-space: nowrap;
+    }
+    .chat-chip:hover {
+        background: rgba(14,165,255,0.14);
+        border-color: rgba(14,165,255,0.4);
+        transform: translateY(-1px);
+    }
+    .chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin: 6px 0;
+    }
+    .chat-history {
+        width: 260px;
+        flex-shrink: 0;
+        background: rgba(8,12,24,0.85);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        backdrop-filter: blur(14px);
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-history-header {
+        padding: 20px 18px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .chat-history-header h2 {
+        font-size: 0.95rem;
+        margin: 0 0 2px;
+        color: #e2e8f0;
+    }
+    .chat-history-header p {
+        color: #7d8496;
+        font-size: 0.72rem;
+        margin: 0;
+    }
+    .chat-history-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .chat-history-list::-webkit-scrollbar { width: 4px; }
+    .chat-history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+    .history-item {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.04);
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .history-item:hover {
+        background: rgba(14,165,255,0.06);
+        border-color: rgba(14,165,255,0.12);
+    }
+    .history-item .icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+    }
+    .history-item .icon.user-icon {
+        background: rgba(255,0,119,0.12);
+        color: #ff0077;
+    }
+    .history-item .icon.bot-icon {
+        background: rgba(14,165,255,0.12);
+        color: #0ea5ff;
+    }
+    .history-item .preview {
+        flex: 1;
+        min-width: 0;
+    }
+    .history-item .preview .label {
+        font-size: 0.65rem;
+        color: #7d8496;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .history-item .preview .text {
+        font-size: 0.8rem;
+        color: #c8cdd8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 1px;
+    }
+    .chat-history-clear {
+        padding: 10px 14px 14px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        flex-shrink: 0;
+    }
+    .chat-history-clear button {
+        width: 100%;
+        padding: 8px;
+        border-radius: 20px;
+        border: 1px solid rgba(255,0,0,0.15);
+        background: rgba(255,0,0,0.05);
+        color: #ff6b6b;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .chat-history-clear button:hover {
+        background: rgba(255,0,0,0.1);
+        border-color: rgba(255,0,0,0.25);
+    }
+    @media (max-width: 900px) {
+        .chat-wrapper { flex-direction: column; height: auto; max-height: none; }
+        .chat-history { width: 100%; max-height: 200px; }
+        .chat-container { height: 60vh; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="chatbox-page">
+    <div class="chat-wrapper">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1><i class="fa-solid fa-comments"></i> CricketHub Chatbox</h1>
+                <p>Ask me anything — I'll answer using AI</p>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="typing-indicator" id="typingIndicator">
+                <span></span><span></span><span></span>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Type your question..." onkeydown="if(event.key==='Enter') sendMessage()">
+                <button id="sendBtn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <div class="chat-history">
+            <div class="chat-history-header">
+                <h2><i class="fa-regular fa-clock"></i> Chat History</h2>
+                <p>All your previous messages</p>
+            </div>
+            <div class="chat-history-list" id="chatHistoryList">
+            </div>
+            <div class="chat-history-clear">
+                <button onclick="clearHistory()"><i class="fa-regular fa-trash-can"></i> Clear History</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    const chatMessages = document.getElementById('chatMessages');
+    const chatHistoryList = document.getElementById('chatHistoryList');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const chatHistory = {{ chat_history_json|safe }};
+
+    function addMessage(text, type, saveToHistory) {
+        const div = document.createElement('div');
+        div.className = 'message ' + type;
+        div.innerHTML = text;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        if (saveToHistory) {
+            addHistoryItem(text, type);
+        }
+    }
+
+    function addHistoryItem(text, type) {
+        const empty = chatHistoryList.querySelector('.chat-history-empty');
+        if (empty) empty.remove();
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.onclick = function() { scrollToBottom(); };
+        const isUser = type === 'user';
+        div.innerHTML = `
+            <div class="icon ${isUser ? 'user-icon' : 'bot-icon'}">
+                <i class="fa-solid ${isUser ? 'fa-user' : 'fa-robot'}"></i>
+            </div>
+            <div class="preview">
+                <div class="label">${isUser ? 'You' : 'Assistant'}</div>
+                <div class="text">${text.replace(/<[^>]*>/g, '').substring(0, 60)}</div>
+            </div>
+        `;
+        chatHistoryList.appendChild(div);
+        chatHistoryList.scrollTop = chatHistoryList.scrollHeight;
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    if (chatHistory.length > 0) {
+        chatHistory.forEach(function(msg) {
+            addMessage(msg.message, msg.is_user ? 'user' : 'bot', false);
+            addHistoryItem(msg.message, msg.is_user ? 'user' : 'bot');
+        });
+    } else {
+        addMessage("Hi! I'm CricketHub Chatbox. Ask me anything about cricket, tournaments, subscriptions, or the platform!", 'bot', false);
+    }
+
+    function sendMessage() {
+        const question = chatInput.value.trim();
+        if (!question) return;
+        addMessage(question, 'user', true);
+        chatInput.value = '';
+        sendBtn.disabled = true;
+        typingIndicator.classList.add('active');
+
+        fetch('{% url "chatbox" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({question: question})
+        })
+        .then(r => r.json())
+        .then(data => {
+            typingIndicator.classList.remove('active');
+            sendBtn.disabled = false;
+            addMessage(data.answer, 'bot', true);
+            chatInput.focus();
+        })
+        .catch(() => {
+            typingIndicator.classList.remove('active');
+            sendBtn.disabled = false;
+            addMessage('Sorry, something went wrong. Please try again.', 'bot', true);
+        });
+    }
+
+    function clearHistory() {
+        if (!confirm('Clear all chat history?')) return;
+        fetch('{% url "chatbox" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({clear_history: true})
+        })
+        .then(r => r.json())
+        .then(() => {
+            chatMessages.innerHTML = '';
+            chatHistoryList.innerHTML = '';
+            addMessage("Hi! I'm CricketHub Chatbox. Ask me anything about cricket, tournaments, subscriptions, or the platform!", 'bot', false);
+        });
+    }
+</script>
+{% endblock %}

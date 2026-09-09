@@ -1,0 +1,371 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050816">
+    <title>{% block title %}CricketHub{% endblock %}</title>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if not hide_sidebar %}
+    <button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="site-sidebar" aria-expanded="false">
+        <span class="menu-toggle-icon" aria-hidden="true">Menu</span>
+    </button>
+    <div class="mobile-overlay" aria-hidden="true"></div>
+
+    <aside class="sidebar" id="site-sidebar" aria-label="Primary">
+        <div class="logo" aria-label="CricketHub home">
+            <i class="fa-solid fa-magnet" aria-hidden="true"></i>
+        </div>
+        <nav class="sidebar-nav" aria-label="Primary links">
+            <ul>
+                <li><a href="{% url 'index' %}"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Home</span></a></li>
+                <li><a href="{% url 'tournaments' %}"><i class="fa-solid fa-trophy" aria-hidden="true"></i><span>Tournaments</span></a></li>
+                <li><a href="{% url 'profile' %}"><i class="fa-solid fa-id-badge" aria-hidden="true"></i><span>Profile</span></a></li>
+                <li><a href="{% url 'suggestions' %}"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i><span>Suggestions</span></a></li>
+                <li><a href="{% url 'subscription' %}"><i class="fa-solid fa-crown" aria-hidden="true"></i><span>Subscription</span></a></li>
+                <!-- <li><a class="sidebar-action" href=""><i class="fa-solid fa-bolt" aria-hidden="true"></i><span>Live</span></a></li> -->
+                <li><a class="sidebar-action" href=""><i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Categories</span></a></li>
+                <li><a class="sidebar-action" href="{% url 'profile' %}"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Settings</span></a></li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            {% if user.is_authenticated %}
+            <a class="sidebar-profile" href="{% url 'profile' %}" aria-label="Open profile">
+                <img class="sidebar-profile-image" id="sidebarProfileImage" src="{% if current_profile and current_profile.avatar_data %}{{ current_profile.avatar_data }}{% else %}{% static 'images/magnet-solid.png' %}{% endif %}" alt="Profile avatar">
+                <div class="sidebar-profile-copy">
+                    <strong id="sidebarProfileName">{{ current_profile.full_name|default:"Player" }}</strong>
+                    <span id="sidebarProfileHint">{% if current_profile and current_profile.mobile %}{{ current_profile.mobile }}{% endif %}</span>
+                    {% if current_subscription %}
+                    <span style="font-size:0.65rem;color:#009dff;margin-top:2px;">{{ current_subscription.plan_name }} &middot; ₹{{ current_subscription.price }}/mo</span>
+                    {% endif %}
+                </div>
+            </a>
+            <button type="button" class="sidebar-logout" id="sidebarLogoutButton">
+                <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                <span>Logout</span>
+            </button>
+            {% else %}
+            <button type="button" class="sidebar-logout" id="sidebarLoginButton">
+                <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                <span>Login</span>
+            </button>
+            {% endif %}
+        </div>
+    </aside>
+
+    <div class="registration-modal hidden" id="sidebarAuthModal" role="dialog" aria-modal="true" aria-labelledby="sidebarAuthTitle">
+        <div class="registration-modal-card">
+            <button class="registration-modal-close" id="sidebarAuthClose" type="button" aria-label="Close registration">×</button>
+            <div class="registration-step active" id="sidebarStepPhone">
+                <h2 id="sidebarAuthTitle">Register to continue</h2>
+                <p>Enter your mobile number to verify your account and continue.</p>
+                <div class="input-group">
+                    <label for="sidebarRegPhone">Mobile Number</label>
+                    <input type="tel" id="sidebarRegPhone" placeholder="Enter 10-digit mobile number" maxlength="10">
+                </div>
+                <button type="button" class="popup-btn" id="sidebarBtnSendOtp">Send Verification OTP</button>
+            </div>
+            <div class="registration-step" id="sidebarStepOtp">
+                <h2>Verify OTP</h2>
+                <p id="sidebarOtpHint">Enter the 4-digit code sent to your mobile number.</p>
+                <div class="input-group">
+                    <label for="sidebarRegOtp">Verification Code</label>
+                    <input type="text" id="sidebarRegOtp" placeholder="Enter OTP" maxlength="4">
+                </div>
+                <button type="button" class="popup-btn" id="sidebarBtnVerifyOtp">Confirm & Continue</button>
+                <button type="button" class="popup-close-btn" id="sidebarBtnBack">Back</button>
+            </div>
+            <div class="registration-step" id="sidebarStepSuccess">
+                <h2>You're all set</h2>
+                <p id="sidebarSuccessText">Your mobile number is verified and you can continue.</p>
+                <button type="button" class="popup-btn" id="sidebarBtnFinish">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+
+    <main class="main{% if hide_sidebar %} main-full{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        const registrationUrl = "{% url 'registration' %}";
+        const logoutUrl = "{% url 'logout' %}";
+        const menuToggle = document.querySelector('.menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.mobile-overlay');
+        const sidebarAuthModal = document.getElementById('sidebarAuthModal');
+        const sidebarStepPhone = document.getElementById('sidebarStepPhone');
+        const sidebarStepOtp = document.getElementById('sidebarStepOtp');
+        const sidebarStepSuccess = document.getElementById('sidebarStepSuccess');
+        const sidebarRegPhoneInput = document.getElementById('sidebarRegPhone');
+        const sidebarRegOtpInput = document.getElementById('sidebarRegOtp');
+        const sidebarOtpHint = document.getElementById('sidebarOtpHint');
+        const sidebarSuccessText = document.getElementById('sidebarSuccessText');
+        let pendingSidebarDestination = null;
+        let simulatedSidebarOtp = null;
+
+        function isRegistered() {
+            return localStorage.getItem('cricketHubRegistered') === 'true';
+        }
+
+        function setMenuState(isOpen) {
+            sidebar?.classList.toggle('open', isOpen);
+            overlay?.classList.toggle('active', isOpen);
+            menuToggle?.classList.toggle('active', isOpen);
+            if (menuToggle) {
+                menuToggle.setAttribute('aria-expanded', String(isOpen));
+                menuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+                const icon = menuToggle.querySelector('.menu-toggle-icon');
+                if (icon) {
+                    icon.textContent = isOpen ? 'X' : 'Menu';
+                }
+            }
+        }
+
+        function showSidebarStep(stepElement) {
+            [sidebarStepPhone, sidebarStepOtp, sidebarStepSuccess].forEach((step) => step?.classList.remove('active'));
+            stepElement?.classList.add('active');
+        }
+
+        function openSidebarAuth(targetUrl) {
+            pendingSidebarDestination = targetUrl || `${window.location.pathname}${window.location.search}`;
+            sidebarRegPhoneInput.value = '';
+            sidebarRegOtpInput.value = '';
+            sidebarOtpHint.textContent = 'Enter the 4-digit code sent to your mobile number.';
+            sidebarSuccessText.textContent = 'Your mobile number is verified and you can continue.';
+            showSidebarStep(sidebarStepPhone);
+            sidebarAuthModal?.classList.remove('hidden');
+        }
+
+        function closeSidebarAuth() {
+            sidebarAuthModal?.classList.add('hidden');
+        }
+
+        function mockSendSidebarOtp(phoneValue) {
+            const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+            simulatedSidebarOtp = generatedOtp;
+            console.log(`[SIDEBAR OTP] OTP sent to +91${phoneValue}. CODE: ${generatedOtp}`);
+            alert(`[MOCK SMS] OTP sent to +91 ${phoneValue}. Verification code: ${generatedOtp}`);
+            return true;
+        }
+
+        menuToggle?.addEventListener('click', () => {
+            setMenuState(!sidebar?.classList.contains('open'));
+        });
+
+        overlay?.addEventListener('click', () => setMenuState(false));
+
+        document.querySelectorAll('.sidebar a, .sidebar button').forEach((item) => {
+            item.addEventListener('click', (event) => {
+                if (item.id === 'sidebarLogoutButton' || item.id === 'sidebarLoginButton') {
+                    return;
+                }
+
+                if (!isRegistered()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const fallback = item.getAttribute('href') || `${window.location.pathname}${window.location.search}`;
+                    openSidebarAuth(fallback);
+                    return;
+                }
+
+                if (window.matchMedia('(max-width: 1024px)').matches) {
+                    setMenuState(false);
+                }
+            });
+        });
+
+        document.getElementById('sidebarLoginButton')?.addEventListener('click', () => {
+            openSidebarAuth(window.location.pathname + window.location.search);
+        });
+
+        document.getElementById('sidebarBtnSendOtp')?.addEventListener('click', () => {
+            const phoneValue = sidebarRegPhoneInput.value.trim();
+
+            if (phoneValue.length !== 10 || Number.isNaN(Number(phoneValue))) {
+                alert('Please enter a valid 10-digit mobile number.');
+                return;
+            }
+
+            if (mockSendSidebarOtp(phoneValue)) {
+                sidebarOtpHint.textContent = `Enter the 4-digit code sent to +91 ${phoneValue}`;
+                showSidebarStep(sidebarStepOtp);
+            }
+        });
+
+        document.getElementById('sidebarBtnVerifyOtp')?.addEventListener('click', async () => {
+            if (sidebarRegOtpInput.value.trim() === simulatedSidebarOtp) {
+                const phone = sidebarRegPhoneInput.value.trim();
+                try {
+                    const resp = await fetch(registrationUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+                        body: JSON.stringify({mobile: phone})
+                    });
+                    const result = await resp.json();
+                    if (!result.success) {
+                        alert('Registration failed: ' + (result.error || 'Unknown error'));
+                        return;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Server error during registration.');
+                    return;
+                }
+                localStorage.setItem('cricketHubRegistered', 'true');
+                showSidebarStep(sidebarStepSuccess);
+            } else {
+                alert('Invalid OTP. Please try again.');
+            }
+        });
+
+        document.getElementById('sidebarBtnFinish')?.addEventListener('click', () => {
+            closeSidebarAuth();
+            if (pendingSidebarDestination) {
+                window.location.href = pendingSidebarDestination;
+            }
+        });
+
+        document.getElementById('sidebarBtnBack')?.addEventListener('click', () => showSidebarStep(sidebarStepPhone));
+        document.getElementById('sidebarAuthClose')?.addEventListener('click', closeSidebarAuth);
+        sidebarAuthModal?.addEventListener('click', (event) => {
+            if (event.target === sidebarAuthModal) {
+                closeSidebarAuth();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                setMenuState(false);
+                closeSidebarAuth();
+            }
+        });
+
+        document.getElementById('sidebarLogoutButton')?.addEventListener('click', () => {
+            try {
+                localStorage.removeItem('cricketHubRegistered');
+            } catch (error) {
+                console.warn('Could not clear profile storage', error);
+            }
+            window.location.href = logoutUrl;
+        });
+    </script>
+    <style>
+        .main-full {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .registration-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 22, 0.78);
+            z-index: 220;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(6px);
+        }
+
+        .registration-modal.hidden {
+            display: none;
+        }
+
+        .registration-modal-card {
+            position: relative;
+            width: min(92vw, 400px);
+            background: rgba(10, 14, 32, 0.98);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
+            padding: 26px 22px 22px;
+            color: #f8fafc;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        }
+
+        .registration-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            border: 0;
+            background: transparent;
+            color: #cbd5e1;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .registration-step {
+            display: none;
+        }
+
+        .registration-step.active {
+            display: block;
+        }
+
+        .registration-modal-card h2 {
+            font-size: 1.45rem;
+            margin-bottom: 10px;
+        }
+
+        .registration-modal-card p {
+            margin-bottom: 16px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .registration-modal-card .input-group {
+            margin-bottom: 14px;
+            text-align: left;
+        }
+
+        .registration-modal-card .input-group label {
+            display: block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            color: #94a3b8;
+        }
+
+        .registration-modal-card .input-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(255,255,255,0.06);
+            color: white;
+            font-size: 15px;
+        }
+
+        .registration-modal-card .input-group input:focus {
+            outline: none;
+            border-color: #0ea5ff;
+            background: rgba(255,255,255,0.09);
+        }
+
+        .registration-modal-card .popup-btn,
+        .registration-modal-card .popup-close-btn {
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .registration-modal-card .popup-close-btn {
+            background: transparent;
+            border: 0;
+            color: #94a3b8;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 10px 0 0;
+        }
+    </style>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

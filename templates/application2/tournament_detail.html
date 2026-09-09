@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_css %}
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: Segoe UI, sans-serif; }
+body {
+    background: black;
+    color: white;
+    min-height: 100vh;
+    padding: 24px;
+}
+        .page-shell { max-width: 1200px; margin: 0 auto; }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #8dd3ff;
+            text-decoration: none;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+        .hero-block {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(12px);
+        }
+        .hero-block h1 { font-size: clamp(1.8rem, 3vw, 2.5rem); margin-bottom: 8px; }
+        .hero-block p { color: #cbd5e1; line-height: 1.6; }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 220px;
+        }
+        .card h3 { font-size: 1.05rem; }
+        .card p { color: #cbd5e1; line-height: 1.5; font-size: 0.95rem; }
+        .play-btn {
+            margin-top: auto;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: white;
+            font-weight: 700;
+            background: linear-gradient(90deg, #0ea5ff, #ff0077);
+            border: none;
+            cursor: pointer;
+        }
+        @media (max-width: 600px) {
+            body { padding: 16px; }
+            .hero-block { padding: 18px; }
+        }
+        @media (max-width:1024px){
+            body{display:block}
+            .main{margin-left:0;width:100%}
+            .row{display:flex;flex-wrap:nowrap;gap:14px}
+            .card{flex-basis:min(220px,78vw);width:min(220px,78vw)}
+        }
+        @media (max-width:768px){
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes floatIn {
+            from { opacity: 0; transform: translateY(18px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .page-shell,
+        .hero-block,
+        .cards-grid,
+        .card,
+        .back-link {
+            animation: fadeInUp 0.75s ease both;
+        }
+
+        .logo,
+        .sidebar li,
+        .back-link {
+            animation: floatIn 0.7s ease both;
+        }
+
+        .sidebar li:nth-child(1) { animation-delay: 0.1s; }
+        .sidebar li:nth-child(2) { animation-delay: 0.16s; }
+        .sidebar li:nth-child(3) { animation-delay: 0.22s; }
+        .sidebar li:nth-child(4) { animation-delay: 0.28s; }
+        .sidebar li:nth-child(5) { animation-delay: 0.34s; }
+        .sidebar li:nth-child(6) { animation-delay: 0.40s; }
+
+        .card {
+            animation: fadeInUp 0.72s ease both;
+            will-change: transform, opacity;
+        }
+
+        .play-btn,
+        .card:hover {
+            transition: transform 0.28s ease, box-shadow 0.28s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px) scale(1.01);
+        }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="page-shell">
+        <a class="back-link" href="{% url 'tournaments' %}">← Back to Tournaments</a>
+
+        <div class="hero-block">
+            <h1>{{ title }}</h1>
+            <p>{{ description }}</p>
+        </div>
+
+        <div class="cards-grid">
+            {% for item in items %}
+            <div class="card">
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.description }}</p>
+                <a class="play-btn" href="{% url 'game' slug=item.title|slugify %}">Play Now</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+

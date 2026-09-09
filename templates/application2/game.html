@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ game.title }} - CricketHub{% endblock %}
+{% block extra_css %}
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Segoe UI, sans-serif; }
+    body { background: black; color: white; min-height: 100vh; }
+    .game-shell { max-width: 1100px; margin: 0 auto; padding: 24px 20px 48px; }
+
+    .back-link {
+        display: inline-flex; align-items: center; gap: 8px;
+        color: #8dd3ff; text-decoration: none; margin-bottom: 18px; font-weight: 600;
+    }
+
+    .game-header { margin-bottom: 24px; }
+    .game-header h1 { font-size: clamp(1.6rem, 3vw, 2.4rem); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .game-badge {
+        font-size: 0.75rem; font-weight: 800; letter-spacing: 1px;
+        padding: 4px 12px; border-radius: 999px; color: #fff;
+        background: linear-gradient(90deg, #0ea5ff, #ff0077);
+    }
+    .game-header p { color: #cbd5e1; margin-top: 8px; line-height: 1.6; }
+
+    .game-stage {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 20px; padding: 18px; backdrop-filter: blur(10px);
+    }
+
+    .embed-wrap { position: relative; border-radius: 14px; overflow: hidden; background: #062e13; }
+    .embed-wrap iframe {
+        display: block; width: 100%; height: clamp(380px, 56vw, 560px);
+        border: 0; background: #062e13;
+    }
+    .embed-info { margin-top: 12px; text-align: center; color: #cbd5e1; font-size: 0.9rem; }
+    .embed-info a { color: #8dd3ff; }
+    .embed-note { margin-top: 4px; font-size: 0.8rem; color: #64748b; }
+
+    .scoreboard {
+        display: flex; justify-content: center; gap: 28px; flex-wrap: wrap;
+        margin-bottom: 14px; text-align: center;
+    }
+    .scorebox { min-width: 88px; }
+    .scorebox .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
+    .scorebox .value { font-size: 1.7rem; font-weight: 800; color: #0ea5ff; }
+
+    .canvas-wrap { position: relative; border-radius: 14px; overflow: hidden; background: #062e13; }
+    #cricketCanvas { width: 100%; display: block; aspect-ratio: 900 / 506; touch-action: manipulation; }
+
+    .game-msg {
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        font-size: clamp(1.2rem, 3vw, 2rem); font-weight: 800; text-align: center;
+        background: rgba(0,0,0,0.72); border: 1px solid rgba(255,255,255,0.15);
+        padding: 14px 28px; border-radius: 14px; pointer-events: none;
+        transition: opacity 0.25s ease; text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+    .game-msg small { display: block; font-size: 0.8rem; font-weight: 500; color: #cbd5e1; margin-top: 4px; }
+
+    .controls { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+    .controls p { color: #cbd5e1; font-size: 0.95rem; }
+    .controls button {
+        padding: 10px 22px; border: none; border-radius: 10px; cursor: pointer;
+        font-size: 15px; font-weight: 700; color: #fff;
+        background: linear-gradient(90deg, #0ea5ff, #ff0077);
+    }
+    .controls button:hover { transform: scale(1.04); }
+
+    .more-games { margin-top: 36px; }
+    .more-games h2 { margin-bottom: 18px; font-size: clamp(1.2rem, 2vw, 1.6rem); }
+    .games-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+    }
+    .game-card {
+        text-decoration: none; color: white; border-radius: 14px; overflow: hidden;
+        background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.1);
+        transition: transform 0.25s ease, box-shadow 0.25s ease; display: block;
+    }
+    .game-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(14,165,255,0.18); }
+    .game-card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; }
+    .game-card-body { padding: 12px; }
+    .game-card-body h3 { font-size: 0.98rem; margin-bottom: 4px; }
+    .game-card-body p { color: #94a3b8; font-size: 0.8rem; line-height: 1.4; }
+
+    .api-note { margin-top: 10px; font-size: 0.75rem; color: #64748b; text-align: right; }
+
+    @media (max-width: 600px) {
+        .game-shell { padding: 16px 12px 32px; }
+        .game-stage { padding: 12px; }
+        .controls { flex-direction: column; align-items: stretch; text-align: center; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="game-shell">
+    <a class="back-link" href="{% url 'play_hub' %}">← Back to All Games</a>
+
+    <div class="game-header">
+        <h1>{{ game.title }} <span class="game-badge">{{ game.format }}</span></h1>
+        <p>{{ game.tagline }}</p>
+    </div>
+
+    <div class="game-stage">
+        {% if game.embed_url %}
+        <div class="embed-wrap">
+            <iframe src="{{ game.embed_url }}" frameborder="0" scrolling="no"
+                    allowfullscreen allow="autoplay; fullscreen; gamepad"
+                    title="Play {{ game.title }}"></iframe>
+        </div>
+        <div class="embed-info">
+            <p>🎮 Live {{ game.format }} game powered by <strong>{{ game.embed_provider }}</strong> — click Play inside the game to start.</p>
+            <p class="embed-note">Not loading? <a href="{{ game.embed_url }}" target="_blank" rel="noopener noreferrer">Open it in a new tab</a></p>
+        </div>
+        {% else %}
+        <div class="scoreboard">
+            <div class="scorebox"><div class="label">Runs</div><div class="value" id="scoreRuns">0</div></div>
+            <div class="scorebox"><div class="label">Wickets</div><div class="value" id="scoreWickets">0</div></div>
+            <div class="scorebox"><div class="label">Balls</div><div class="value" id="scoreBalls">0 / 10</div></div>
+        </div>
+
+        <div class="canvas-wrap">
+            <canvas id="cricketCanvas" width="900" height="506"></canvas>
+            <div class="game-msg" id="gameMsg">Get Ready...</div>
+        </div>
+
+        <div class="controls">
+            <p>🏏 Click / Tap the game when the ball reaches the batsman to time your shot!</p>
+            <button id="newGameBtn" type="button">New Game</button>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="more-games">
+        <h2>More Cricket Games</h2>
+        <div class="games-grid" id="moreGamesGrid">
+            {% for g in remaining_games %}
+            <a class="game-card" href="{% url 'game' slug=g.slug %}">
+                <img src="{% static 'images/' %}{{ g.image }}" alt="{{ g.title }}">
+                <div class="game-card-body">
+                    <h3>{{ g.title }}</h3>
+                    <p>{{ g.tagline }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <div class="api-note" id="apiNote">Cricket API loaded from server.</div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(() => {
+    const canvas = document.getElementById('cricketCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const msgEl = document.getElementById('gameMsg');
+    const runsEl = document.getElementById('scoreRuns');
+    const wicketsEl = document.getElementById('scoreWickets');
+    const ballsEl = document.getElementById('scoreBalls');
+
+    const BALLS_MAX = 10;
+    const WICKETS_MAX = 2;
+
+    const batsmanX = 250, batsmanFootY = 438;
+    const bowlerX = 690, pitchY = 415;
+    const stumpsX = 195;
+
+    let state = 'idle';
+    let runs = 0, wickets = 0, ballsBowled = 0;
+    let ballActive = false;
+    let ball = { x: 0, y: 0, speed: 0 };
+    let shotFired = false;
+    let delayTimer = 0;
+    let batAngle = 0, batSwinging = false, swingTimer = 0;
+    let bowlerArm = 0.0;
+    let lastTime = performance.now();
+    let matchVersion = 0;
+
+    function updateScore() {
+        runsEl.textContent = runs;
+        wicketsEl.textContent = wickets;
+        ballsEl.textContent = ballsBowled + ' / ' + BALLS_MAX;
+    }
+
+    function showMsg(text, sub) {
+        msgEl.innerHTML = text + (sub ? '<small>' + sub + '</small>' : '');
+        msgEl.style.opacity = '1';
+    }
+
+    function hideMsg() {
+        msgEl.style.opacity = '0';
+    }
+
+    function endInnings() {
+        state = 'over';
+        let verdict;
+        if (runs >= 60) verdict = '🏆 Outstanding innings! Top score!';
+        else if (runs >= 40) verdict = '🔥 Great batting! A champion knock!';
+        else if (runs >= 20) verdict = '👏 Solid effort, keep practising!';
+        else verdict = '🤕 Tough luck, try again!';
+        showMsg('Match Over!', verdict);
+    }
+
+    function bowl() {
+        ballsBowled += 1;
+        ballActive = true;
+        shotFired = false;
+        ball.x = bowlerX;
+        ball.y = pitchY;
+        ball.speed = 5.6 + ballsBowled * 0.15;
+        state = 'bowling';
+        batAngle = 0;
+        hideMsg();
+    }
+
+    function beginDelivery() {
+        if (ballsBowled >= BALLS_MAX) {
+            endInnings();
+            return;
+        }
+        if (wickets >= WICKETS_MAX) {
+            endInnings();
+            return;
+        }
+        bowl();
+    }
+
+    function start() {
+        state = 'idle';
+        delayTimer = 90;
+        showMsg('Get Ready...', 'First ball coming soon');
+    }
+
+    function hitBall() {
+        const d = Math.abs(ball.x - batsmanX);
+        let outcome;
+        let out = false;
+        if (d <= 25) {
+            outcome = (Math.random() < 0.5) ? 4 : 6;
+        } else if (d <= 60) {
+            const r = Math.random();
+            outcome = r < 0.12 ? 2 : 3;
+        } else if (d <= 105) {
+            if (Math.random() < 0.18) { out = true; outcome = 0; }
+            else outcome = 1;
+        } else {
+            outcome = 0;
+        }
+
+        ballActive = false;
+        runs += outcome;
+        shotFired = true;
+        swingTimer = 14;
+        batSwinging = true;
+
+        if (out) {
+            wickets += 1;
+            showMsg('Caught! 🧤');
+        } else if (outcome === 0) {
+            showMsg('Dot Ball 👎', 'Swing earlier or later!');
+        } else if (outcome === 4 || outcome === 6) {
+            showMsg(outcome === 6 ? 'SIX! 💥' : 'FOUR! 🔥', '+' + outcome + ' runs');
+        } else {
+            showMsg('Good running! +' + outcome);
+        }
+        updateScore();
+
+        const version = matchVersion;
+        setTimeout(() => {
+            if (version !== matchVersion) return;
+            if (wickets >= WICKETS_MAX || ballsBowled >= BALLS_MAX) {
+                endInnings();
+            } else {
+                delayTimer = 70;
+                state = 'result';
+            }
+        }, 1100);
+    }
+
+    function batSwing(x, y, angle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle * Math.PI / 180);
+        ctx.fillStyle = '#d9a441';
+        ctx.fillRect(-6, -52, 12, 78);
+        ctx.strokeStyle = '#8a5a1c';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-6, -52, 12, 78);
+        ctx.restore();
+    }
+
+    function drawBowler() {
+        const x = bowlerX, footY = pitchY + 18;
+        const headY = footY - 58;
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(x - 3, footY - 38, 6, 38);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.arc(x, headY, 9, 0, Math.PI * 2);
+        ctx.fill();
+        const armX = x + 10;
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x, footY - 36);
+        ctx.lineTo(armX, footY - 46 + bowlerArm * 26);
+        ctx.stroke();
+    }
+
+    function drawBatsman() {
+        const x = batsmanX, footY = batsmanFootY;
+        const headY = footY - 64;
+        ctx.fillStyle = '#0ea5e9';
+        ctx.fillRect(x - 12, footY - 46, 24, 46);
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.arc(x, headY, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(x - 3, headY - 1, 9, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0ea5e9';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x, footY - 44);
+        ctx.lineTo(x + 10, footY - 22);
+        ctx.stroke();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(x, footY - 42);
+        ctx.lineTo(x - 6, footY);
+        ctx.moveTo(x, footY - 42);
+        ctx.lineTo(x + 8, footY);
+        ctx.stroke();
+        if (batSwinging) {
+            batSwing(x + 14, footY - 22, -120);
+        } else {
+            batSwing(x + 14, footY - 22, 18);
+        }
+    }
+
+    function drawStumps(x) {
+        ctx.fillStyle = '#e7d9a8';
+        for (let i = -1; i <= 1; i++) {
+            ctx.fillRect(x + i * 7 - 2, pitchY - 18, 4, 18);
+        }
+        ctx.fillRect(x - 12, pitchY - 24, 24, 5);
+    }
+
+    function drawField() {
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#0b2d6b');
+        grad.addColorStop(0.42, '#3b82f6');
+        grad.addColorStop(0.46, '#16a34a');
+        grad.addColorStop(1, '#15803d');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(450, 445, 380, 120, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#d9b27a';
+        ctx.fillRect(150, pitchY - 27, 600, 54);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(150, pitchY - 3, 600, 2);
+
+        drawStumps(bowlerX - 6);
+        drawStumps(stumpsX);
+    }
+
+    function loop(t) {
+        const dt = Math.min(40, t - lastTime);
+        lastTime = t;
+
+        if (state === 'idle') {
+            delayTimer -= dt;
+            if (delayTimer <= 0) beginDelivery();
+        } else if (state === 'bowling') {
+            if (ballActive) {
+                ball.x -= ball.speed * (dt / 16.7);
+                if (shotFired) {
+                    ball.x += ball.speed * 2.2 * (dt / 16.7);
+                    ball.y -= 2.2 * (dt / 16.7);
+                }
+            if (ball.x < 60) { ballActive = false; delayTimer = 60; state = 'result'; }
+            if (shotFired && ball.x > W + 30) { ballActive = false; }
+            }
+            if (ballActive && !shotFired && ball.x < batsmanX + 110) {
+                msgEl.style.opacity = '1';
+                msgEl.textContent = '⚡ SWING!';
+            }
+            if (ballActive && !shotFired && ball.x < stumpsX + 8) {
+                ballActive = false;
+                wickets += 1;
+                showMsg('Bowled! 🎳', 'You missed the ball!');
+                updateScore();
+                const version = matchVersion;
+                setTimeout(() => {
+                    if (version !== matchVersion) return;
+                    if (wickets >= WICKETS_MAX || ballsBowled >= BALLS_MAX) endInnings();
+                    else { delayTimer = 70; state = 'result'; }
+                }, 1100);
+            }
+        } else if (state === 'result') {
+            delayTimer -= dt;
+            if (delayTimer <= 0) beginDelivery();
+        }
+
+        if (batSwinging) {
+            swingTimer -= dt / 16.7;
+            batAngle = -120 * Math.min(1, (14 - swingTimer) / 6);
+            if (swingTimer <= 0) { batSwinging = false; batAngle = 0; }
+        }
+
+        bowlerArm = state === 'bowling' && ballActive && !shotFired ? 1.0 : 0.0;
+
+        drawField();
+        drawBowler();
+        drawBatsman();
+
+        if (ballActive) {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#dc2626';
+            ctx.fill();
+            ctx.strokeStyle = '#7f1d1d';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(ball.x - 2, ball.y - 2, 2, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fill();
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (state === 'bowling' && ballActive && !shotFired) {
+            hitBall();
+        } else if (state === 'idle' || state === 'result') {
+            beginDelivery();
+        } else if (state === 'over') {
+            resetGame();
+        }
+    });
+
+    document.getElementById('newGameBtn').addEventListener('click', resetGame);
+
+    function resetGame() {
+        runs = 0; wickets = 0; ballsBowled = 0;
+        updateScore();
+        shotFired = false; ballActive = false;
+        start();
+    }
+
+    resetGame();
+    updateScore();
+    requestAnimationFrame(loop);
+
+    const moreGrid = document.getElementById('moreGamesGrid');
+    const apiNote = document.getElementById('apiNote');
+    const currentSlug = '{{ game.slug }}';
+    fetch('{% url "cricket_api_detail" slug=game.slug %}')
+        .then((res) => res.json())
+        .then((data) => {
+            if (!data || !data.remaining_games) return;
+            moreGrid.innerHTML = data.remaining_games.map((g) => `
+                <a class="game-card" href="/game/${g.slug}/">
+                    <img src="/static/images/${g.image}" alt="${g.title}">
+                    <div class="game-card-body">
+                        <h3>${g.title}</h3>
+                        <p>${g.tagline}</p>
+                    </div>
+                </a>`).join('');
+            apiNote.textContent = 'Cricket API: ' + data.total_games + ' games available.';
+        })
+        .catch(() => { apiNote.textContent = 'Cricket API offline - showing server data.'; });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,363 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Profile | CricketHub{% endblock %}
+{% block extra_css %}
+<style>
+    .profile-page {
+        padding: 28px;
+        min-height: 100vh;
+    }
+
+    .profile-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(300px, 360px) 1fr;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .profile-card,
+    .profile-panel {
+        background: rgba(8, 12, 24, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(14px);
+    }
+
+    .profile-card {
+        padding: 24px;
+    }
+
+    .avatar-wrap {
+        position: relative;
+        width: 170px;
+        height: 170px;
+        margin-bottom: 18px;
+    }
+
+    .avatar {
+        width: 170px;
+        height: 170px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.06);
+        display: block;
+    }
+
+    .avatar-upload {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 0;
+        background: linear-gradient(90deg, #0ea5ff, #ff0077);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .profile-card h1,
+    .profile-panel h2 {
+        margin: 0 0 10px;
+        color: #f8fafc;
+    }
+
+    .profile-card p,
+    .profile-panel p {
+        color: #cbd5e1;
+        line-height: 1.6;
+    }
+
+    .save-banner {
+        margin-bottom: 18px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: rgba(16, 185, 129, 0.14);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #d1fae5;
+        font-weight: 600;
+    }
+
+    .summary {
+        margin-top: 18px;
+        display: grid;
+        gap: 10px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        color: #dbeafe;
+        font-size: 0.95rem;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+    }
+
+    .profile-panel {
+        padding: 24px;
+    }
+
+    .field {
+        margin-top: 18px;
+    }
+
+    .field label {
+        display: block;
+        margin-bottom: 8px;
+        color: #94a3b8;
+        font-size: 0.9rem;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        outline: none;
+    }
+
+    .field textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        border: 0;
+        border-radius: 12px;
+        padding: 13px 18px;
+        cursor: pointer;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #0ea5ff, #ff0077);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+    }
+
+    @media (max-width: 900px) {
+        .profile-page {
+            padding: 18px;
+        }
+
+        .profile-shell {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="profile-page">
+    <div class="profile-shell">
+        <section class="profile-card">
+            <div class="avatar-wrap">
+                <img
+                    class="avatar"
+                    id="avatarPreview"
+                    src="{% if current_profile and current_profile.avatar_data %}{{ current_profile.avatar_data }}{% else %}{% static 'images/magnet-solid.png' %}{% endif %}"
+                    alt="Profile avatar"
+                >
+                <label class="avatar-upload" for="avatarFile" aria-label="Upload avatar">
+                    <i class="fa-solid fa-camera"></i>
+                </label>
+                <input id="avatarFile" type="file" accept="image/*" hidden>
+            </div>
+
+            <h1 id="profileHeading">{{ current_profile.full_name|default:"Guest Player" }}</h1>
+            <p>Save your profile details here and they will be stored in the database for the sidebar and profile page.</p>
+
+            <div class="summary">
+                <div class="summary-row">
+                    <span>Mobile</span>
+                    <strong id="summaryMobile">{{ current_profile.mobile|default:"Not set" }}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Email</span>
+                    <strong id="summaryEmail">{{ current_profile.email|default:"Not set" }}</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Location</span>
+                    <strong id="summaryLocation">{{ current_profile.location|default:"Not set" }}</strong>
+                </div>
+                {% if current_subscription %}
+                <div class="summary-row" style="border:1px solid rgba(0,157,255,0.3);background:rgba(0,157,255,0.06);">
+                    <span>Plan</span>
+                    <strong style="color:#009dff;">{{ current_subscription.plan_name }} &mdash; ₹{{ current_subscription.price }}/mo</strong>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="profile-panel">
+            <h2>Update Profile</h2>
+            <p>Fill in your details and click save. The avatar and profile info will be persisted in the database.</p>
+
+            {% if request.GET.saved %}
+            <div class="save-banner">Profile saved successfully.</div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="avatar_data" id="avatarData" value="{% if current_profile and current_profile.avatar_data %}{{ current_profile.avatar_data }}{% endif %}">
+
+                <div class="field">
+                    <label for="full_name">Full Name</label>
+                    <input id="full_name" name="full_name" type="text" value="{{ current_profile.full_name|default:'' }}" placeholder="Enter your name">
+                </div>
+
+                <div class="field">
+                    <label for="email">Email Address</label>
+                    <input id="email" name="email" type="email" value="{{ current_profile.email|default:'' }}" placeholder="Enter your email">
+                </div>
+
+                <div class="field">
+                    <label for="mobile">Mobile Number</label>
+                    <input id="mobile" name="mobile" type="text" value="{{ current_profile.mobile|default:'' }}" placeholder="Enter your mobile number">
+                </div>
+
+                <div class="field">
+                    <label for="date_of_birth">Date of Birth</label>
+                    <input id="date_of_birth" name="date_of_birth" type="date" value="{{ current_profile.date_of_birth|date:'Y-m-d' }}">
+                </div>
+
+                <div class="field">
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender">
+                        <option value="" {% if not current_profile.gender %}selected{% endif %}>Select gender</option>
+                        <option value="Male" {% if current_profile.gender == "Male" %}selected{% endif %}>Male</option>
+                        <option value="Female" {% if current_profile.gender == "Female" %}selected{% endif %}>Female</option>
+                        <option value="Other" {% if current_profile.gender == "Other" %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="location">Location</label>
+                    <input id="location" name="location" type="text" value="{{ current_profile.location|default:'' }}" placeholder="Enter your location">
+                </div>
+
+                <div class="field">
+                    <label for="about">About Me</label>
+                    <textarea id="about" name="about" placeholder="Write something about yourself...">{{ current_profile.about|default:'' }}</textarea>
+                </div>
+
+                <div class="actions">
+                    <button class="btn-primary" type="submit">Save Profile</button>
+                    <a class="btn-secondary" href="{% url 'index' %}">Back to Home</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    const STORAGE_KEY = 'crickethub_profile';
+    const avatarInput = document.getElementById('avatarFile');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const avatarDataInput = document.getElementById('avatarData');
+    const profileHeading = document.getElementById('profileHeading');
+    const fullNameInput = document.getElementById('full_name');
+    const mobileInput = document.getElementById('mobile');
+    const emailInput = document.getElementById('email');
+    const locationInput = document.getElementById('location');
+    const summaryMobile = document.getElementById('summaryMobile');
+    const summaryEmail = document.getElementById('summaryEmail');
+    const summaryLocation = document.getElementById('summaryLocation');
+
+    function syncHeader() {
+        const name = fullNameInput.value.trim() || 'Guest Player';
+        profileHeading.textContent = name;
+        summaryMobile.textContent = mobileInput.value.trim() || 'Not set';
+        summaryEmail.textContent = emailInput.value.trim() || 'Not set';
+        summaryLocation.textContent = locationInput.value.trim() || 'Not set';
+    }
+
+    fullNameInput.addEventListener('input', syncHeader);
+    mobileInput.addEventListener('input', syncHeader);
+    emailInput.addEventListener('input', syncHeader);
+    locationInput.addEventListener('input', syncHeader);
+
+    function saveToLocalStorage() {
+        const data = {
+            full_name: document.getElementById('full_name').value,
+            email: document.getElementById('email').value,
+            mobile: document.getElementById('mobile').value,
+            date_of_birth: document.getElementById('date_of_birth').value,
+            gender: document.getElementById('gender').value,
+            location: document.getElementById('location').value,
+            about: document.getElementById('about').value,
+            avatar_data: document.getElementById('avatarData').value,
+        };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+    }
+
+    function restoreFromLocalStorage() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return;
+            const data = JSON.parse(saved);
+            const fieldMap = { full_name:'full_name', email:'email', mobile:'mobile', date_of_birth:'date_of_birth', gender:'gender', location:'location', about:'about' };
+            let changed = false;
+            for (const [key, id] of Object.entries(fieldMap)) {
+                const el = document.getElementById(id);
+                if (el && data[key] && !el.value) { el.value = data[key]; changed = true; }
+            }
+            if (data.avatar_data && !avatarDataInput.value) {
+                avatarDataInput.value = data.avatar_data;
+                avatarPreview.src = data.avatar_data;
+                changed = true;
+            }
+            if (changed) syncHeader();
+        } catch (e) {}
+    }
+
+    document.querySelector('form').addEventListener('submit', saveToLocalStorage);
+
+    avatarInput.addEventListener('change', () => {
+        const file = avatarInput.files && avatarInput.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const dataUrl = String(event.target.result || '');
+            avatarPreview.src = dataUrl;
+            avatarDataInput.value = dataUrl;
+            saveToLocalStorage();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    restoreFromLocalStorage();
+    syncHeader();
+</script>
+{% endblock %}
