@@ -2,9 +2,22 @@
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
     "render": {
-      "type": "remote",
-      "url": "https://mcp.render.com/mcp",
-      "oauth": {}
+      "type": "local",
+      "command": [
+        "docker",
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "RENDER_API_KEY",
+        "-v",
+        "render-mcp-server-config:/config",
+        "ghcr.io/render-oss/render-mcp-server"
+      ],
+      "environment": {
+        "RENDER_API_KEY": "{env:RENDER_API_KEY}"
+      },
+      "timeout": 60000
     }
   }
 }
