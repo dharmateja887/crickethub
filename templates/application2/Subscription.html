@@ -391,14 +391,15 @@
         </div>
 
         <div id="checkoutFormView">
-            <p style="color:#7d8496; text-align:center; font-size:0.9rem;">Redirecting to secure Razorpay payment...</p>
+            <p style="color:#7d8496; text-align:center; font-size:0.9rem; margin:0 0 12px;">Redirecting to secure Razorpay payment...</p>
+            <p class="checkout-error" id="checkoutError" style="display:none;">&nbsp;</p>
         </div>
 
         <div class="success-state" id="successState">
             <div class="check-icon">&#10003;</div>
             <h3>Payment Successful!</h3>
             <p>Your <span id="successPlan">Male Only</span> plan is now active. Welcome aboard!</p>
-            <button class="checkout-pay-btn" style="margin-top:20px;" onclick="window.location.href='{% url 'index' %}'">Done</button>
+            <button class="checkout-pay-btn" style="margin-top:20px;" onclick="window.location.href='{% url 'subscription' %}'">Done</button>
         </div>
     </div>
 </div>
@@ -419,6 +420,7 @@
         document.getElementById('checkoutPlanPrice').textContent = price;
         document.getElementById('successPlan').textContent = plan;
         document.getElementById('checkoutFormView').style.display = 'block';
+        document.getElementById('checkoutError').style.display = 'none';
         document.getElementById('successState').style.display = 'none';
         document.getElementById('checkoutOverlay').classList.add('active');
 
@@ -428,7 +430,11 @@
             body: JSON.stringify({plan_name: plan, price: price})
         }).then(r => r.json()).then(order => {
             if (order.error) {
-                alert('Could not start payment: ' + order.error);
+                showCheckoutError('Could not start payment: ' + order.error);
+                return;
+            }
+            if (typeof Razorpay === 'undefined') {
+                showCheckoutError('Razorpay is still loading. Please try again in a moment.');
                 return;
             }
             const options = {
@@ -452,18 +458,40 @@
                         })
                     }).then(r => r.json()).then(d => {
                         if (d.success) {
+                            if (window.MockData) {
+                                const current = window.MockData.getCurrentUser();
+                                if (current && current.mobile) {
+                                    window.MockData.addSubscription(current.mobile, {
+                                        plan_name: plan,
+                                        price: price,
+                                        payment_method: 'razorpay',
+                                        transaction_id: response.razorpay_payment_id,
+                                        status: 'active'
+                                    });
+                                }
+                            }
                             document.getElementById('checkoutFormView').style.display = 'none';
                             document.getElementById('successState').style.display = 'block';
                         } else {
-                            alert('Payment verified but could not activate plan: ' + d.error);
+                            showCheckoutError('Payment verified but could not activate plan: ' + d.error);
                         }
-                    }).catch(() => alert('Could not confirm payment. Contact support.'));
+                    }).catch(() => showCheckoutError('Could not confirm payment. Contact support.'));
+                },
+                modal: {
+                    ondismiss: function() {
+                        document.getElementById('checkoutOverlay').classList.remove('active');
+                    }
                 },
                 theme: {color: '#009dff'}
             };
             const rzp = new Razorpay(options);
             rzp.open();
-        }).catch(() => alert('Could not reach the server. Please try again.'));
+        }).catch(() => showCheckoutError('Could not reach the server. Please try again.'));
+    }
+
+    function showCheckoutError(message) {
+        document.getElementById('checkoutError').textContent = message;
+        document.getElementById('checkoutError').style.display = 'block';
     }
 
     function closeCheckout() {

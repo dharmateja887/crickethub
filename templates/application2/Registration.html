@@ -1137,6 +1137,13 @@ document.getElementById('btnFinishAuth').addEventListener('click', async () => {
         if (result.success) {
             appState.isRegistered = true;
             localStorage.setItem('cricketHubRegistered', 'true');
+            if (window.MockData) {
+                window.MockData.signIn(phone, { mobile: phone, full_name: 'Guest Player' });
+                const savedProfile = window.MockData.getProfile(phone);
+                if (savedProfile) {
+                    localStorage.setItem('crickethub_profile', JSON.stringify(savedProfile));
+                }
+            }
             closeAuthPopup();
             if (successMobileText) {
                 successMobileText.textContent = `Mobile verified: +91 ${phone}`;

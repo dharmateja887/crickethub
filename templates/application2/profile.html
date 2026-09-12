@@ -319,6 +319,9 @@
             avatar_data: document.getElementById('avatarData').value,
         };
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+        if (window.MockData) {
+            window.MockData.saveProfile(data.mobile, data);
+        }
     }
 
     function restoreFromLocalStorage() {

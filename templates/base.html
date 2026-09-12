@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <script src="{% static 'js/mockdata.js' %}"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -113,7 +114,7 @@
         let simulatedSidebarOtp = null;
 
         function isRegistered() {
-            return localStorage.getItem('cricketHubRegistered') === 'true';
+            return localStorage.getItem('cricketHubRegistered') === 'true' || (window.MockData && window.MockData.isLoggedIn());
         }
 
         function setMenuState(isOpen) {
@@ -221,6 +222,13 @@
                     return;
                 }
                 localStorage.setItem('cricketHubRegistered', 'true');
+                if (window.MockData) {
+                    window.MockData.signIn(phone, { mobile: phone });
+                    const savedProfile = window.MockData.getProfile(phone);
+                    if (savedProfile) {
+                        localStorage.setItem('crickethub_profile', JSON.stringify(savedProfile));
+                    }
+                }
                 showSidebarStep(sidebarStepSuccess);
             } else {
                 alert('Invalid OTP. Please try again.');
@@ -252,6 +260,7 @@
         document.getElementById('sidebarLogoutButton')?.addEventListener('click', () => {
             try {
                 localStorage.removeItem('cricketHubRegistered');
+                window.MockData && window.MockData.signOut();
             } catch (error) {
                 console.warn('Could not clear profile storage', error);
             }

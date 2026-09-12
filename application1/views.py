@@ -439,6 +439,8 @@ def subscription(request):
 def create_subscription_order(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid method'}, status=405)
+    if not (RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET):
+        return JsonResponse({'error': 'Razorpay is not configured on the server'}, status=503)
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
@@ -461,7 +463,12 @@ def create_subscription_order(request):
             'payment_capture': 1,
         })
     except razorpay.errors.BadRequestError as e:
-        return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({'error': f'Payment setup failed: {e}'}, status=400)
+    except razorpay.errors.SignatureVerificationError as e:
+        return JsonResponse({'error': 'Payment verification failed'}, status=400)
+    except Exception as e:
+        logger.error('Razorpay order creation failed: %s', e)
+        return JsonResponse({'error': 'Payment service unavailable. Please try again.'}, status=502)
 
     return JsonResponse({
         'order_id': order['id'],

@@ -367,6 +367,10 @@
         const set = getPlayed();
         set.add(slug);
         localStorage.setItem(PLAYED_KEY, JSON.stringify([...set]));
+        if (window.MockData) {
+            const current = window.MockData.getCurrentUser();
+            if (current && current.mobile) window.MockData.recordGamePlayed(current.mobile, slug);
+        }
         refreshPlayedBadges();
     }
     function refreshPlayedBadges() {
