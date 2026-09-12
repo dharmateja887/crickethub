@@ -4,11 +4,27 @@ from django.urls import reverse
 
 class SubscriptionViewTests(TestCase):
     def test_subscription_page_renders(self):
-        response = self.client.get(reverse('Subscription'))
+        response = self.client.get(reverse('subscription'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Subscription Plans')
+        self.assertContains(response, 'Subscription')
 
-    def test_subscription_page_accepts_plan_selection(self):
-        response = self.client.post(reverse('Subscription'), {'plan': 'Premium Plan'})
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(self.client.session['selected_plan'], 'Premium Plan')
+    def test_subscription_page_shows_razorpay_key(self):
+        response = self.client.get(reverse('subscription'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'checkout.razorpay.com')
+
+    def test_order_endpoint_requires_plan(self):
+        response = self.client.post(
+            reverse('create_subscription_order'),
+            data={},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_subscription_requires_payment_details(self):
+        response = self.client.post(
+            reverse('subscription'),
+            data={'plan_name': 'Premium Plan', 'price': 199},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)

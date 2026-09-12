@@ -1,23 +1,31 @@
 from django.test import TestCase
-from .models import Player, Team
+
+from .models import ChatMessage, Profile, Subscription
 
 
-class TeamAndPlayerModelTests(TestCase):
-    def test_team_and_player_can_be_created(self):
-        team = Team.objects.create(
-            name="Chennai Super Kings",
-            city="Chennai",
-            founded_year=2008,
+class ModelTests(TestCase):
+    def test_profile_can_be_created(self):
+        profile = Profile.objects.create(
+            full_name="MS Dhoni",
+            email="dhoni@crickethub.com",
+            mobile="9876543210",
         )
-        player = Player.objects.create(
-            name="MS Dhoni",
-            team=team,
-            jersey_number=7,
-            position="Wicketkeeper",
-            batting_style="Right-handed",
-            bowling_style="Right-arm medium",
-        )
+        self.assertEqual(profile.full_name, "MS Dhoni")
+        self.assertEqual(profile.email, "dhoni@crickethub.com")
+        self.assertEqual(str(profile), "MS Dhoni")
 
-        self.assertEqual(team.name, "Chennai Super Kings")
-        self.assertEqual(player.team, team)
-        self.assertEqual(player.name, "MS Dhoni")
+    def test_subscription_can_be_created(self):
+        sub = Subscription.objects.create(
+            plan_name="Premium Plan",
+            price=199,
+            transaction_id="pay_test_123",
+        )
+        self.assertEqual(sub.price, 199)
+        self.assertEqual(sub.status, "active")
+        self.assertIn("Premium", str(sub))
+
+    def test_chat_message_can_be_created(self):
+        msg = ChatMessage.objects.create(message="Hello CricketHub", is_user=True)
+        self.assertTrue(msg.is_user)
+        self.assertFalse(msg.is_chatbox)
+        self.assertIn("Hello", str(msg))

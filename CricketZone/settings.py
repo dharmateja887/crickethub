@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+from urllib.parse import quote_plus
+
 from dotenv import load_dotenv
 
 import dj_database_url
@@ -88,7 +90,7 @@ DATABASES = {
         # If DATABASE_URL is set (e.g. Vercel Postgres), use it.
         default=os.getenv(
             'DATABASE_URL',
-            f"mysql://{os.getenv('DB_USER', 'root')}:{os.getenv('DB_PASSWORD', '')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'crickethub')}",
+            f"mysql://{os.getenv('DB_USER', 'root')}:{quote_plus(os.getenv('DB_PASSWORD', ''))}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'crickethub')}",
         )
     )
 }
@@ -142,3 +144,6 @@ STORAGES = {
 }
 
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
+
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')

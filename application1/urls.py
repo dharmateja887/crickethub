@@ -8,6 +8,7 @@ urlpatterns = [
     path("chatbox/", views.chatbox, name="chatbox"),
     path("suggestions/", views.suggestions, name="suggestions"),
     path("subscription/", views.subscription, name="subscription"),
+    path("subscription/order/", views.create_subscription_order, name="create_subscription_order"),
     path("tournaments/", views.tournaments, name="tournaments"),
     path("tournaments/<slug:slug>/", views.tournament_detail, name="tournament_detail"),
     path("game/<slug:slug>/", views.game, name="game"),

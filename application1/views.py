@@ -4,6 +4,8 @@ import random
 import re
 from datetime import date
 
+import razorpay
+
 from google import genai
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
@@ -13,7 +15,9 @@ from django.urls import reverse
 
 from .models import ChatMessage, Profile, Subscription
 from dashboard.models import DashboardChatMessage, DashboardSuggestion
-from CricketZone.settings import GOOGLE_API_KEY
+from CricketZone.settings import GOOGLE_API_KEY, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
+
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 _genai_client = None
 
@@ -393,17 +397,33 @@ def subscription(request):
             price = int(raw_price)
         except (TypeError, ValueError):
             price = 0
-        if plan_name and price:
-            sub = Subscription(
-                user=request.user if request.user.is_authenticated else None,
-                plan_name=plan_name,
-                price=int(price),
-                payment_method=data.get('payment_method', 'card'),
-                transaction_id=data.get('transaction_id', ''),
-            )
-            sub.save()
-            return JsonResponse({'success': True})
-        return JsonResponse({'error': 'Missing plan_name or price'}, status=400)
+        if not plan_name or not price:
+            return JsonResponse({'error': 'Missing plan_name or price'}, status=400)
+
+        payment_id = str(data.get('razorpay_payment_id', '') or '').strip()
+        order_id = str(data.get('razorpay_order_id', '') or '').strip()
+        signature = str(data.get('razorpay_signature', '') or '').strip()
+        if not (payment_id and order_id and signature):
+            return JsonResponse({'error': 'Missing payment details'}, status=400)
+
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature,
+            })
+        except razorpay.errors.SignatureVerificationError:
+            return JsonResponse({'error': 'Payment signature verification failed'}, status=400)
+
+        sub = Subscription(
+            user=request.user if request.user.is_authenticated else None,
+            plan_name=plan_name,
+            price=price,
+            payment_method=data.get('payment_method', 'razorpay'),
+            transaction_id=payment_id,
+        )
+        sub.save()
+        return JsonResponse({'success': True})
 
     current_subscription = None
     if request.user.is_authenticated:
@@ -412,6 +432,44 @@ def subscription(request):
     return render(request, 'application2/Subscription.html', {
         'current_profile': profile_obj,
         'current_subscription': current_subscription,
+        'razorpay_key_id': RAZORPAY_KEY_ID,
+    })
+
+
+def create_subscription_order(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid method'}, status=405)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        data = request.POST
+
+    plan_name = str(data.get('plan_name', '') or '').strip()
+    raw_price = data.get('price')
+    try:
+        price = int(raw_price)
+    except (TypeError, ValueError):
+        price = 0
+    if not plan_name or not price:
+        return JsonResponse({'error': 'Missing plan_name or price'}, status=400)
+
+    try:
+        order = razorpay_client.order.create({
+            'amount': price * 100,
+            'currency': 'INR',
+            'receipt': f'sub_{plan_name}_{price}',
+            'payment_capture': 1,
+        })
+    except razorpay.errors.BadRequestError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({
+        'order_id': order['id'],
+        'amount': order['amount'],
+        'currency': order['currency'],
+        'key_id': RAZORPAY_KEY_ID,
+        'plan_name': plan_name,
+        'plan_price': price,
     })
 
 

@@ -387,42 +387,11 @@
         <div class="checkout-header">
             <div class="checkout-plan-badge" id="checkoutPlanBadge">Male Only</div>
             <h3>Complete Payment</h3>
-            <p>Enter your card details to activate <span id="checkoutPlanName">Male Only</span> &mdash; &#8377;<span id="checkoutPlanPrice">99</span>/month</p>
-        </div>
-
-        <div class="card-preview">
-            <div class="card-type" id="cardTypeDisplay">&#9670;&#9670;&#9670;&#9670;</div>
-            <div class="card-number-display" id="cardNumberDisplay">&#9679;&#9679;&#9679;&#9679; &#9679;&#9679;&#9679;&#9679; &#9679;&#9679;&#9679;&#9679; &#9679;&#9679;&#9679;&#9679;</div>
-            <div class="card-bottom">
-                <span id="cardNameDisplay">CARDHOLDER NAME</span>
-                <span id="cardExpiryDisplay">MM/YY</span>
-            </div>
+            <p>Secure payment via Razorpay for <span id="checkoutPlanName">Male Only</span> &mdash; &#8377;<span id="checkoutPlanPrice">99</span>/month</p>
         </div>
 
         <div id="checkoutFormView">
-            <div class="checkout-field">
-                <label for="cardholderName">Cardholder Name</label>
-                <input type="text" id="cardholderName" placeholder="John Doe" maxlength="40" oninput="updateCardPreview()">
-            </div>
-            <div class="checkout-field">
-                <label for="cardNumber">Card Number</label>
-                <input type="text" id="cardNumber" placeholder="4111 2222 3333 4444" maxlength="19" oninput="formatCardNumber(); updateCardPreview();">
-            </div>
-            <div class="checkout-row">
-                <div class="checkout-field">
-                    <label for="cardExpiry">Expiry Date</label>
-                    <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(); updateCardPreview();">
-                </div>
-                <div class="checkout-field">
-                    <label for="cardCvv">CVV</label>
-                    <input type="text" id="cardCvv" placeholder="123" maxlength="4" oninput="updateCardPreview();">
-                </div>
-            </div>
-            <p class="checkout-error" id="checkoutError">Please fill in all fields correctly.</p>
-            <button class="checkout-pay-btn" id="payBtn" onclick="processPayment()">
-                <span id="payBtnText">Pay &#8377;<span id="payAmount">99</span></span>
-                <div class="spinner" id="paySpinner"></div>
-            </button>
+            <p style="color:#7d8496; text-align:center; font-size:0.9rem;">Redirecting to secure Razorpay payment...</p>
         </div>
 
         <div class="success-state" id="successState">
@@ -435,7 +404,10 @@
 </div>
 {% endblock %}
 {% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+    const RAZORPAY_KEY_ID = '{{ razorpay_key_id }}';
+
     let currentPlan = 'Male Only';
     let currentPrice = 99;
 
@@ -445,100 +417,57 @@
         document.getElementById('checkoutPlanBadge').textContent = plan;
         document.getElementById('checkoutPlanName').textContent = plan;
         document.getElementById('checkoutPlanPrice').textContent = price;
-        document.getElementById('payAmount').textContent = price;
         document.getElementById('successPlan').textContent = plan;
-        document.getElementById('cardholderName').value = '';
-        document.getElementById('cardNumber').value = '';
-        document.getElementById('cardExpiry').value = '';
-        document.getElementById('cardCvv').value = '';
-        document.getElementById('checkoutError').style.display = 'none';
         document.getElementById('checkoutFormView').style.display = 'block';
-        document.getElementById('payBtn').disabled = false;
-        document.getElementById('payBtnText').style.display = 'inline';
-        document.getElementById('paySpinner').style.display = 'none';
         document.getElementById('successState').style.display = 'none';
-        updateCardPreview();
         document.getElementById('checkoutOverlay').classList.add('active');
+
+        fetch('{% url "create_subscription_order" %}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+            body: JSON.stringify({plan_name: plan, price: price})
+        }).then(r => r.json()).then(order => {
+            if (order.error) {
+                alert('Could not start payment: ' + order.error);
+                return;
+            }
+            const options = {
+                key: order.key_id,
+                amount: order.amount,
+                currency: order.currency,
+                order_id: order.order_id,
+                name: 'CricketHub',
+                description: plan + ' plan - Rs ' + price + '/month',
+                handler: function(response) {
+                    fetch('{% url "subscription" %}', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+                        body: JSON.stringify({
+                            plan_name: plan,
+                            price: price,
+                            payment_method: 'razorpay',
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature
+                        })
+                    }).then(r => r.json()).then(d => {
+                        if (d.success) {
+                            document.getElementById('checkoutFormView').style.display = 'none';
+                            document.getElementById('successState').style.display = 'block';
+                        } else {
+                            alert('Payment verified but could not activate plan: ' + d.error);
+                        }
+                    }).catch(() => alert('Could not confirm payment. Contact support.'));
+                },
+                theme: {color: '#009dff'}
+            };
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }).catch(() => alert('Could not reach the server. Please try again.'));
     }
 
     function closeCheckout() {
         document.getElementById('checkoutOverlay').classList.remove('active');
-    }
-
-    function formatCardNumber() {
-        const input = document.getElementById('cardNumber');
-        let val = input.value.replace(/\D/g, '').slice(0, 16);
-        let formatted = '';
-        for (let i = 0; i < val.length; i++) {
-            if (i > 0 && i % 4 === 0) formatted += ' ';
-            formatted += val[i];
-        }
-        input.value = formatted;
-    }
-
-    function formatExpiry() {
-        const input = document.getElementById('cardExpiry');
-        let val = input.value.replace(/\D/g, '').slice(0, 4);
-        if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2);
-        input.value = val;
-    }
-
-    function updateCardPreview() {
-        const name = document.getElementById('cardholderName').value.toUpperCase() || 'CARDHOLDER NAME';
-        document.getElementById('cardNameDisplay').textContent = name;
-
-        const num = document.getElementById('cardNumber').value || '\u25CF\u25CF\u25CF\u25CF \u25CF\u25CF\u25CF\u25CF \u25CF\u25CF\u25CF\u25CF \u25CF\u25CF\u25CF\u25CF';
-        document.getElementById('cardNumberDisplay').textContent = num;
-
-        const exp = document.getElementById('cardExpiry').value || 'MM/YY';
-        document.getElementById('cardExpiryDisplay').textContent = exp;
-
-        const raw = document.getElementById('cardNumber').value.replace(/\s/g, '');
-        let type = '\u25C6\u25C6\u25C6\u25C6';
-        if (raw.startsWith('4')) type = 'VISA';
-        else if (raw.startsWith('5')) type = 'MASTERCARD';
-        else if (raw.startsWith('3')) type = 'AMEX';
-        else if (raw.startsWith('6')) type = 'DISCOVER';
-        document.getElementById('cardTypeDisplay').textContent = type;
-    }
-
-    function processPayment() {
-        const name = document.getElementById('cardholderName').value.trim();
-        const card = document.getElementById('cardNumber').value.replace(/\s/g, '');
-        const exp = document.getElementById('cardExpiry').value.trim();
-        const cvv = document.getElementById('cardCvv').value.trim();
-
-        document.getElementById('checkoutError').style.display = 'none';
-
-        if (!name || card.length < 13 || !exp || !cvv) {
-            document.getElementById('checkoutError').textContent = 'Please fill in all fields correctly.';
-            document.getElementById('checkoutError').style.display = 'block';
-            return;
-        }
-
-        document.getElementById('payBtn').disabled = true;
-        document.getElementById('payBtnText').style.display = 'none';
-        document.getElementById('paySpinner').style.display = 'block';
-
-        const txnId = 'TXN' + Date.now() + Math.random().toString(36).slice(2, 6).toUpperCase();
-        fetch('{% url "subscription" %}', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
-            body: JSON.stringify({
-                plan_name: currentPlan,
-                price: currentPrice,
-                payment_method: 'card',
-                transaction_id: txnId
-            })
-        }).then(r => r.json()).then(d => {
-            if (!d.success) console.warn('DB save failed:', d.error);
-        }).catch(e => console.warn('DB save error:', e));
-
-        setTimeout(() => {
-            document.getElementById('paySpinner').style.display = 'none';
-            document.getElementById('checkoutFormView').style.display = 'none';
-            document.getElementById('successState').style.display = 'block';
-        }, 2000);
     }
 
     document.getElementById('checkoutOverlay').addEventListener('click', function(e) {
